@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation Page</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .donation-form {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+            width: 90%; /* Adjust width for responsiveness */
+            max-width: 400px; /* Limit the maximum width */
+            box-sizing: border-box; /* Ensures padding is included in width */
+        }
+
+        .donation-form h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input {
+            width: 100%; /* Ensures input fields don't exceed form width */
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+            box-sizing: border-box; /* Includes padding in width calculation */
+        }
+
+        input:focus {
+            border-color: #6a11cb;
+            box-shadow: 0 0 6px rgba(106, 17, 203, 0.2);
+        }
+
+        button {
+            width: 100%; /* Matches input field width */
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #2575fc 0%, #6a11cb 100%);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        @media (max-width: 600px) {
+            .donation-form {
+                padding: 20px; /* Reduced padding for small screens */
+            }
+
+            .donation-form h2 {
+                font-size: 20px;
+            }
+
+            input, button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <form class="donation-form" id="donationForm">
+        <h2>Make a Donation</h2>
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+            <label for="amount">Donation Amount (₹)</label>
+            <input type="number" id="amount" name="amount" placeholder="Enter amount" min="1" required>
+        </div>
+        <button type="button" id="payButton">Pay Now</button>
+    </form>
+</body>
+</html>
+
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    document.getElementById('payButton').addEventListener('click', function (e) {
+        e.preventDefault();
+
+        const form = document.getElementById('donationForm');
+        const formData = new FormData(form);
+
+        // Fetch order details from the server
+        fetch('/process_payment', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(order => {
+                if (order.error) {
+                    alert("Error: " + order.error);
+                    return;
+                }
+
+                // Initialize Razorpay checkout
+                const options = {
+                    key: {{razorpay_key}}, // Replace with your Razorpay Key ID
+                    amount: order.amount,
+                    currency: order.currency,
+                    name: "Donation Page",
+                    description: "Donation Payment",
+                    order_id: order.order_id,
+                    handler: function (response) {
+                        // Redirect to receipt page with payment details
+                        const receiptUrl = `/receipt?name=${encodeURIComponent(formData.get('name'))}&email=${encodeURIComponent(formData.get('email'))}&amount=${order.amount / 100}&transaction_id=${encodeURIComponent(response.razorpay_payment_id)}&order_id=${encodeURIComponent(order.order_id)}`;
+                        window.location.href = receiptUrl;
+                    },
+                    prefill: {
+                        name: order.name,
+                        email: order.email
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+            })
+            .catch(error => {
+                console.error("Error processing payment:", error);
+                alert("An error occurred. Please try again.");
+            });
+    });
+</script>
+
+</body>
+</html>
