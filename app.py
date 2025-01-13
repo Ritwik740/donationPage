@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify
 import random, razorpay
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 RAZORPAY_KEY = os.getenv("RAZORPAY_KEY")
 RAZORPAY_SECRET = os.getenv("RAZORPAY_SECRET")
 
